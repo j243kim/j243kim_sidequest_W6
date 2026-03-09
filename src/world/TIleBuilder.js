@@ -67,8 +67,8 @@ export function buildTilesAndGroups(level) {
   level.fire.physics = "static";
   level.fire.spriteSheet = level.assets.fireImg;
   level.fire.addAnis({ burn: { w: 32, h: 32, row: 0, frames: 16 } });
-  level.fire.w = 18;
-  level.fire.h = 16;
+  level.fire.w = 12;
+  level.fire.h = 6;
   level.fire.tile = "f";
 
   // --- ground tile (g) ---

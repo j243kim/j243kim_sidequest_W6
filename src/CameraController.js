@@ -28,6 +28,12 @@ export class CameraController {
     // internal camera state (so we can smooth + reset)
     this.cx = undefined;
     this.cy = undefined;
+
+    // screen shake state
+    this._shakeTimer = 0;
+    this._shakeIntensity = 0;
+    this._shakeOffsetX = 0;
+    this._shakeOffsetY = 0;
   }
 
   setTarget(sprite) {
@@ -37,6 +43,16 @@ export class CameraController {
   reset() {
     this.cx = undefined;
     this.cy = undefined;
+    this._shakeTimer = 0;
+    this._shakeIntensity = 0;
+    this._shakeOffsetX = 0;
+    this._shakeOffsetY = 0;
+  }
+
+  // Trigger screen shake (intensity in pixels, duration in frames)
+  shake(intensity = 3, duration = 12) {
+    this._shakeIntensity = intensity;
+    this._shakeTimer = duration;
   }
 
   update({ viewW, viewH, levelW, levelH }) {
@@ -54,6 +70,18 @@ export class CameraController {
 
     this.cx = nextX;
     this.cy = nextY;
+
+    // Apply screen shake offset
+    if (this._shakeTimer > 0) {
+      const t = this._shakeTimer / 12; // normalized decay
+      const mag = this._shakeIntensity * t;
+      this._shakeOffsetX = Math.round((Math.random() * 2 - 1) * mag);
+      this._shakeOffsetY = Math.round((Math.random() * 2 - 1) * mag);
+      this._shakeTimer--;
+    } else {
+      this._shakeOffsetX = 0;
+      this._shakeOffsetY = 0;
+    }
   }
 
   applyToP5Camera() {
@@ -61,7 +89,7 @@ export class CameraController {
     camera.width = this.pkg.view?.viewW ?? this.pkg.view?.w ?? 240;
     camera.height = this.pkg.view?.viewH ?? this.pkg.view?.h ?? 192;
 
-    if (this.cx !== undefined) camera.x = this.cx;
-    if (this.cy !== undefined) camera.y = this.cy;
+    if (this.cx !== undefined) camera.x = this.cx + this._shakeOffsetX;
+    if (this.cy !== undefined) camera.y = this.cy + this._shakeOffsetY;
   }
 }

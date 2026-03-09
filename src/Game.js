@@ -176,8 +176,7 @@ export class Game {
     if (this.sound) {
       this._unsubs.push(this.events.on("leaf:collected", () => this.sound.play("leaf")));
       this._unsubs.push(this.events.on("player:damaged", () => this.sound.play("hurt")));
-      this._unsubs.push(this.events.on("player:died", () => this.sound.play("die")));
-      this._unsubs.push(this.events.on("level:won", () => this.sound.play("win")));
+      this._unsubs.push(this.events.on("player:died", () => this.sound.play("hurt")));
       this._unsubs.push(this.events.on("boar:damaged", () => this.sound.play("hit")));
     }
 

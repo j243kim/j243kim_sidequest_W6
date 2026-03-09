@@ -51,8 +51,8 @@ export class FireController {
     // If you later move this into tuning.json, replace these literals.
     g.addAnis({ burn: { w: 32, h: 32, row: 0, frames: 16 } });
 
-    g.w = 18;
-    g.h = 16;
+    g.w = 12;
+    g.h = 6;
 
     g.tile = "f";
     return g;

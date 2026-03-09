@@ -276,8 +276,12 @@ export class Level {
       if (boarSprite.dead || boarSprite.dying) return;
       boarSprite.hp = 0;
       boarSprite.dying = true;
+      // Skip the grounded wait — fire kills instantly so the boar doesn't get stuck
+      boarSprite.dead = true;
+      boarSprite.deathStarted = false;
       boarSprite.knockTimer = 0;
       boarSprite.vel.x = 0;
+      boarSprite.vel.y = 0;
     });
   }
 

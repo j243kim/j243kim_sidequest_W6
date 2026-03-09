@@ -46,6 +46,7 @@ import { DebugOverlay } from "./src/DebugOverlay.js";
 
 import { WinScreen } from "./src/ui/WinScreen.js";
 import { LoseScreen } from "./src/ui/LoseScreen.js";
+import { ParticleSystem } from "./src/ParticleSystem.js";
 
 // ------------------------------------------------------------
 // Helpers
@@ -97,6 +98,7 @@ let debugOverlay; // VIEW/SYSTEM: debug UI
 
 let winScreen;
 let loseScreen;
+let particles; // VIEW: particle effects system
 let parallaxLayers = []; // Preloaded parallax layer defs [{ img, factor }, ...]
 
 // Make URLs absolute so they can’t accidentally resolve relative to /src/...
@@ -129,6 +131,18 @@ async function boot() {
   // --- Audio registry ---
   // (AudioContext may still be locked until the user clicks/presses a key.)
   soundManager = new SoundManager();
+
+  // Load SFX triggered by gameplay events (Papers, Please / ONUW inspired: reactive audio feedback)
+  // Reference: https://brackeysgames.itch.io/brackeys-platformer-bundle
+  // Reference: https://jdwasabi.itch.io/8-bit-16-bit-sound-effects-pack
+  soundManager.load("jump", "assets/sfx/jump.wav");
+  soundManager.load("leaf", "assets/sfx/leafCollect.wav");
+  soundManager.load("hurt", "assets/sfx/receiveDamage.wav");
+  soundManager.load("hit", "assets/sfx/hitEnemy.wav");
+
+  // Background music loop
+  // Reference: https://pizzadoggy.itch.io/cozy-tunes
+  soundManager.loadMusic("assets/sfx/music.wav", 0.35);
 
   // --- Parallax layer defs (VIEW) ---
   const defs = levelPkg.level?.view?.parallax ?? [];
@@ -196,6 +210,9 @@ function initRuntime() {
   winScreen = new WinScreen(levelPkg, assets);
   loseScreen = new LoseScreen(levelPkg, assets);
 
+  // Particle effects (VIEW)
+  particles = new ParticleSystem();
+
   // VIEW: camera follow + clamp
   cameraController = new CameraController(levelPkg);
   cameraController.setTarget(game.level.playerCtrl.sprite);
@@ -204,6 +221,38 @@ function initRuntime() {
   // IMPORTANT: subscribe ONCE (not in draw)
   game.events.on("level:restarted", () => {
     cameraController?.reset();
+    particles?.clear();
+    soundManager?.stopMusic();
+  });
+
+  // --- Week 6: reactive visual + audio feedback ---
+  // Screen shake on player damage (physics knockback + sound + shake = multi-sensory)
+  game.events.on("player:damaged", ({ sourceX }) => {
+    cameraController?.shake(4, 14);
+    const p = game.level?.playerCtrl?.sprite;
+    if (p) particles?.damageBurst(p.x, p.y);
+  });
+
+  // Bigger shake on death
+  game.events.on("player:died", () => {
+    cameraController?.shake(6, 20);
+  });
+
+  // Sparkle particles on leaf collect (collect sound already wired in Game)
+  game.events.on("leaf:collected", ({ score, winScore }) => {
+    const p = game.level?.playerCtrl?.sprite;
+    if (p) particles?.sparkle(p.x, p.y - 6);
+  });
+
+  // Impact particles on boar hit (boar knockback physics + hit sound + particles)
+  game.events.on("boar:damaged", ({ x, y }) => {
+    particles?.impact(x, y);
+    cameraController?.shake(2, 8);
+  });
+
+  // Jump sound is already wired in Game.js
+  game.events.on("player:jumped", () => {
+    soundManager?.play("jump");
   });
 
   // VIEW: parallax background renderer
@@ -249,8 +298,14 @@ function draw() {
     viewH,
   });
 
+  // Start music after audio is unlocked (first user gesture)
+  if (audioUnlocked) soundManager?.startMusic();
+
   // WORLD update (includes physics step)
   game.update();
+
+  // Particles update + draw (world-space, before camera adjustments)
+  particles?.update();
 
   // VIEW: camera follow + clamp (after update so player position is current)
   cameraController?.update({
@@ -264,6 +319,9 @@ function draw() {
   // WORLD draw + HUD composite
   game.draw({
     drawHudFn: () => {
+      // Particles draw in world-space (on top of sprites, under HUD)
+      particles?.draw();
+
       // camera.off()/on() MUST be paired even if something throws.
       camera.off();
       try {
