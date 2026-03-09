@@ -12,7 +12,7 @@
 // - Does NOT control camera, parallax, or HUD
 // - Does NOT implement boar AI (BoarSystem does)
 
-import { buildBoarGroup } from "./world/BoarSystem.js";
+import { buildBoarGroup } from "./BoarSystem.js";
 
 export function buildTilesAndGroups(level) {
   // ---------------------------------------------------------------------------
